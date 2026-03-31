@@ -2,7 +2,7 @@
 
 Plataforma de governança DevOps orientada por AIOps para análise automática de risco de mudanças, validação de políticas e geração inteligente de evidências de auditoria em pipelines de CI/CD.
 
-Este projeto demonstra como **conceitos de AIOps podem ser aplicados à governança DevOps**, permitindo tomada de decisão inteligente durante o ciclo de entrega de software.
+Este projeto visa aplicar **conceitos de AIOps à governança DevOps**, permitindo tomada de decisão inteligente durante o ciclo de entrega de software.
 
 A plataforma integra pipelines de CI/CD com análise baseada em IA para avaliar o **risco de mudanças de código**, aplicar políticas de governança e gerar automaticamente **evidências para auditoria**.
 
@@ -10,7 +10,7 @@ A plataforma integra pipelines de CI/CD com análise baseada em IA para avaliar 
 
 # Visão Geral
 
-Pipelines modernos de DevOps automatizam build e deploy, porém **governança de mudanças e análise de risco** ainda são frequentemente manuais ou baseadas apenas em regras.
+Pipelines modernos de DevOps automatizam build e deploy, porém **governança de mudanças e análise de risco** quando existem, ainda são frequentemente manuais ou baseadas apenas em regras.
 
 Este projeto explora como **AIOps (Artificial Intelligence for IT Operations)** pode melhorar a governança DevOps por meio de:
 
@@ -30,23 +30,15 @@ A solução integra ferramentas de CI/CD com uma camada de governança baseada e
 Eventos do pipeline são enviados para agentes de IA responsáveis por classificar mudanças, calcular risco e tomar decisões de governança.
 
 Fluxo de alto nível:
+- Preparar um diagrama no Draw.io depois.
 
-```console
-Desenvolvedor
-↓
-Repositório GitLab
-↓
-Pipeline Jenkins
-↓
-Build + Análise de Código (SonarQube)
-↓
-Agente de Governança com IA
-↓
-Motor de Decisão (Aprovar / Revisar / Bloquear)
-↓
-Geração de Evidência de Auditoria
-```
-
+1. Desenvolvedor
+2. Repositório GitLab
+3. Pipeline Jenkins
+4. Build + Análise de Código (SonarQube)
+5. Agente de Governança com IA
+6. Motor de Decisão (Aprovar / Revisar / Bloquear)
+7. Geração de Evidência de Auditoria
 
 ---
 
@@ -90,7 +82,7 @@ Integração com ferramentas comuns do ecossistema DevOps:
 
 # Estrutura do Projeto
 
-```console
+```bash
 aiops-change-governance
 │
 ├── architecture
@@ -173,23 +165,19 @@ Após iniciar, os serviços estarão disponíveis em:
 
 ## Exemplo de Fluxo de Governança
 
-Desenvolvedor realiza push do código no GitLab
+- Depois fazer um diagrama melhor no Draw.io
 
-O pipeline do Jenkins é iniciado
 
-O projeto Spring Boot é compilado
+1. Desenvolvedor realiza push do código no GitLab
+2. O pipeline do Jenkins é iniciado
+3. O projeto Spring Boot é compilado
+4. O SonarQube executa análise de qualidade
+5. O pipeline envia dados da mudança para o agente de governança
+6. O agente de IA analisa a mudança
+7. Uma decisão é retornada ao pipeline
+8. Evidências são geradas para auditoria
 
-O SonarQube executa análise de qualidade
-
-O pipeline envia dados da mudança para o agente de governança
-
-O agente de IA analisa a mudança
-
-Uma decisão é retornada ao pipeline
-
-Evidências são geradas para auditoria
-
-Exemplo de resposta da análise:
+- Exemplo de resposta da análise:
 
 ```json
 {
@@ -204,52 +192,44 @@ Exemplo de resposta da análise:
 
 Este projeto explora dois modelos de governança em pipelines DevOps.
 
-```console
-Governança Tradicional
-validação baseada em regras
-políticas estáticas
-avaliação manual de risco
-Governança com AIOps
-análise de risco automática
-classificação inteligente de mudanças
-tomada de decisão assistida por IA
-geração automática de evidências
-Objetivo dos Experimentos
-```
+1. Governança Tradicional
+- validação baseada em regras
+- políticas estáticas
+- avaliação manual de risco
 
-## O projeto busca avaliar como AIOps pode melhorar:
+2. Governança com AIOps
+- análise de risco automática
+- classificação inteligente de mudanças
+- tomada de decisão assistida por IA
+- geração automática de evidências
 
-```console
-governança DevOps
-gestão de risco em mudanças
-automação de auditoria
-observabilidade de pipelines
-Próximas Evoluções
-```
+## Objetivo dos Experimentos
 
-## Possíveis evoluções do projeto incluem:
+- O projeto busca avaliar como AIOps pode melhorar:
+    - governança DevOps
+    - gestão de risco em mudanças
+    - automação de auditoria
+    - observabilidade de pipelines
 
-```console
-detecção de anomalias em pipelines
-análise de impacto de deploy baseada em métricas
-arquitetura orientada a eventos com Kafka
-integração com Prometheus e Grafana
-uso de modelos de machine learning para previsão de risco
-```
+## Próximas Evoluções
+
+- Possíveis evoluções do projeto incluem:
+    - detecção de anomalias em pipelines
+    - análise de impacto de deploy baseada em métricas
+    - arquitetura orientada a eventos com Kafka
+    - integração com Prometheus e Grafana
+    - uso de modelos de machine learning para previsão de risco
+
 
 ## Artigo Técnico
 
-Um artigo técnico detalhando arquitetura, implementação e resultados será publicado no Medium.
+- Um artigo técnico detalhando arquitetura, implementação e resultados será publicado no Medium.
 
-O artigo abordará:
-```console
-desafios da governança DevOps
-arquitetura baseada em AIOps
-resultados do laboratório
-aprendizados e próximos passos
-```
-
-
-- Autor: Leonardo Viana
-- DevOps / Platform Engineering
-- AIOps • Observabilidade • Sistemas Distribuídos
+- **O artigo abordará:**
+    - desafios da **governança DevOps**
+    - arquitetura baseada em **AIOps**
+    - resultados do laboratório
+    - aprendizados e próximos passos
+- **Autor**: Leonardo Viana
+- **DevOps / Platform Engineering**
+- **AIOps • Observabilidade • Sistemas Distribuídos**

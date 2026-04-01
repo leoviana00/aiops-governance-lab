@@ -1,0 +1,51 @@
+version: "3.8"
+
+services:
+
+  gitlab:
+    image: gitlab/gitlab-ce:latest
+    container_name: aiops-gitlab
+    hostname: gitlab
+    restart: always
+    ports:
+      - "8081:80"
+    volumes:
+      - gitlab_config:/etc/gitlab
+      - gitlab_logs:/var/log/gitlab
+      - gitlab_data:/var/opt/gitlab
+
+  jenkins:
+    image: jenkins/jenkins:lts-jdk17
+    container_name: aiops-jenkins
+    hostname: jenkins
+    restart: always
+    ports:
+      - "8080:8080"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+
+  sonarqube:
+    image: sonarqube:community
+    container_name: aiops-sonarqube
+    hostname: sonarqube
+    restart: always
+    ports:
+      - "9000:9000"
+    environment:
+      - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+
+  ai-agent:
+    build: ../ai-governance-agent
+    container_name: aiops-agent
+    ports:
+      - "8000:8000"
+
+volumes:
+
+  jenkins_home:
+  sonarqube_data:
+  gitlab_config:
+  gitlab_logs:
+  gitlab_data:

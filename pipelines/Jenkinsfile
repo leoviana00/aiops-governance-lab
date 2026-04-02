@@ -1,0 +1,371 @@
+node {
+
+    // ==============================
+    // Stage 1 - SCM
+    // ==============================
+
+    stage("SCM") {
+
+        echo "Checkout do repositório"
+
+        git(
+            branch: "master",
+            credentialsId: "GitInJenkins",
+            url: "git@gitlab:root/springboot-demo.git"
+        )
+
+    }
+
+    // ==============================
+    // Stage 2 - Change Telemetry
+    // ==============================
+
+    stage("Change Telemetry") {
+
+        echo "Coletando telemetria da mudança"
+
+        script {
+
+            env.GITLAB_USER = env.gitlabUserName ?: "unknown"
+            env.GITLAB_BRANCH = env.gitlabBranch ?: "unknown"
+            env.GITLAB_EVENT = env.gitlabActionType ?: "manual"
+            env.GITLAB_AFTER = env.gitlabAfter ?: "unknown"
+
+            env.PROJECT_NAME = sh(
+                script: "basename -s .git `git config --get remote.origin.url`",
+                returnStdout: true
+            ).trim()
+
+            env.COMMIT_SHA = sh(
+                script: "git rev-parse HEAD",
+                returnStdout: true
+            ).trim()
+
+            env.COMMIT_AUTHOR = sh(
+                script: "git log -1 --pretty=%an",
+                returnStdout: true
+            ).trim()
+
+            env.COMMIT_MESSAGE = sh(
+                script: "git log -1 --pretty=%B",
+                returnStdout: true
+            ).trim()
+
+            env.COMMIT_TYPE = sh(
+                script: "git log -1 --pretty=%s | cut -d':' -f1",
+                returnStdout: true
+            ).trim()
+
+            env.FILES_CHANGED = sh(
+                script: "git diff --name-only HEAD~1 2>/dev/null | wc -l || echo 0",
+                returnStdout: true
+            ).trim()
+
+            env.LINES_ADDED = sh(
+                script: '''
+                git diff --numstat HEAD~1 2>/dev/null | awk '{add+=$1} END {print add+0}'
+                ''',
+                returnStdout: true
+            ).trim()
+
+            env.LINES_REMOVED = sh(
+                script: '''
+                git diff --numstat HEAD~1 2>/dev/null | awk '{del+=$2} END {print del+0}'
+                ''',
+                returnStdout: true
+            ).trim()
+
+            env.MODULES_AFFECTED = sh(
+                script: '''
+                git diff --name-only HEAD~1 2>/dev/null | cut -d/ -f1 | sort -u | wc -l
+                ''',
+                returnStdout: true
+            ).trim()
+
+        }
+
+    }
+
+    // ==============================
+    // Stage 3 - Build
+    // ==============================
+
+    stage("Build") {
+        sh "./mvnw clean package -DskipTests"
+    }
+
+    // ==============================
+    // Stage 4 - Test
+    // ==============================
+
+    stage("Test") {
+
+        sh "./mvnw test"
+
+        junit 'target/surefire-reports/*.xml'
+
+    }
+
+    // ==============================
+    // Stage 5 - Test Evidence
+    // ==============================
+
+    stage("Test Evidence") {
+
+        env.TESTS_TOTAL = sh(
+            script: '''
+            grep -h 'tests="' target/surefire-reports/*.xml | head -n1 | sed -E 's/.*tests="([0-9]+)".*/\\1/' || echo 0
+            ''',
+            returnStdout: true
+        ).trim()
+
+        env.TESTS_FAILURES = sh(
+            script: '''
+            grep -h 'failures="' target/surefire-reports/*.xml | head -n1 | sed -E 's/.*failures="([0-9]+)".*/\\1/' || echo 0
+            ''',
+            returnStdout: true
+        ).trim()
+
+        env.TESTS_ERRORS = sh(
+            script: '''
+            grep -h 'errors="' target/surefire-reports/*.xml | head -n1 | sed -E 's/.*errors="([0-9]+)".*/\\1/' || echo 0
+            ''',
+            returnStdout: true
+        ).trim()
+
+    }
+
+    // ==============================
+    // Stage 6 - SonarQube Analysis
+    // ==============================
+
+    stage("SonarQube Analysis") {
+
+        withSonarQubeEnv('sonar') {
+
+            withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+
+                sh """
+                ./mvnw org.sonarsource.scanner.maven:sonar-maven-plugin:4.0.0.4121:sonar \
+                -Dsonar.projectKey=${env.PROJECT_NAME} \
+                -Dsonar.host.url=$SONAR_HOST_URL \
+                -Dsonar.token=$SONAR_TOKEN
+                """
+
+            }
+
+        }
+
+    }
+
+    // ==============================
+    // Stage 7 - Quality Gate
+    // ==============================
+
+    stage("Quality Gate") {
+
+        timeout(time: 5, unit: 'MINUTES') {
+
+            def qg = waitForQualityGate()
+
+            env.SONAR_QG_STATUS = qg.status
+
+            if (qg.status != 'OK') {
+                error "Pipeline abortado devido ao Quality Gate"
+            }
+
+        }
+
+    }
+
+    // ==============================
+    // Stage 8 - Evidence Generation
+    // ==============================
+
+    stage("Evidence Generation") {
+
+        script {
+
+            def evidence = [
+
+                pipeline: [
+                    build_number: env.BUILD_NUMBER
+                ],
+
+                commit: [
+                    sha: env.COMMIT_SHA,
+                    author: env.COMMIT_AUTHOR,
+                    type: env.COMMIT_TYPE,
+                    message: env.COMMIT_MESSAGE
+                ],
+
+                change_metrics: [
+                    files_changed: env.FILES_CHANGED as Integer,
+                    lines_added: env.LINES_ADDED as Integer,
+                    lines_removed: env.LINES_REMOVED as Integer,
+                    modules_affected: env.MODULES_AFFECTED as Integer
+                ],
+
+                tests: [
+                    total: env.TESTS_TOTAL as Integer,
+                    failures: env.TESTS_FAILURES as Integer,
+                    errors: env.TESTS_ERRORS as Integer
+                ],
+
+                sonar: [
+                    quality_gate: env.SONAR_QG_STATUS
+                ]
+
+            ]
+
+            writeFile file: "evidence.json",
+            text: groovy.json.JsonOutput.prettyPrint(
+                groovy.json.JsonOutput.toJson(evidence)
+            )
+
+        }
+
+        archiveArtifacts artifacts: 'evidence.json'
+
+    }
+
+    // ==============================
+    // Stage 9 - Send Change Event
+    // ==============================
+
+    stage("Send Change Event") {
+
+        echo "Enviando evento para AIOps Agent"
+
+        sh """
+        curl -s -X POST http://ai-agent:8000/change-event \
+        -H "Content-Type: application/json" \
+        -d @evidence.json
+        """
+
+    }
+
+    // ==============================
+    // Stage 10 - AIOps Model Training
+    // ==============================
+
+    stage("AIOps Model Training") {
+
+        echo "Treinando modelo AIOps (se dataset suficiente)"
+
+        sh """
+        curl -s -X POST http://ai-agent:8000/train
+        """
+
+    }
+
+    // ==============================
+    // Stage 11 - AIOps Risk Prediction
+    // ==============================
+
+    stage("AIOps Risk Prediction") {
+
+        echo "Consultando previsão de risco"
+
+        sh """
+        curl -s -X POST http://ai-agent:8000/predict \
+        -H "Content-Type: application/json" \
+        -d @evidence.json > ai-risk.json
+        """
+
+        sh "cat ai-risk.json"
+
+    }
+
+    // ==============================
+    // Stage 12 - AIOps Deployment Decision
+    // ==============================
+    
+    stage("AIOps Deployment Decision") {
+    
+        script {
+    
+            if (!fileExists("ai-risk.json")) {
+                echo "ai-risk.json não encontrado — decisão padrão"
+                return
+            }
+    
+            def risk
+    
+            try {
+    
+                risk = readJSON file: "ai-risk.json"
+    
+            } catch (Exception e) {
+    
+                echo "Resposta inválida do agente AIOps"
+                sh "cat ai-risk.json"
+                return
+            }
+    
+            // Verifica se existe probabilidade válida
+            if (!risk.containsKey("risk_probability") || risk.risk_probability == null) {
+    
+                echo "Modelo ainda não treinado ou previsão indisponível"
+                echo "Resposta do agente:"
+                sh "cat ai-risk.json"
+    
+                return
+            }
+    
+            def probability
+    
+            try {
+    
+                probability = risk.risk_probability as Double
+    
+            } catch (Exception e) {
+    
+                echo "Valor de risco inválido recebido do agente"
+                sh "cat ai-risk.json"
+                return
+            }
+    
+            // ==============================
+            // Exibição de informações de risco
+            // ==============================
+    
+            echo "Risk Level: ${risk.risk_level}"
+            echo "Predicted risk: ${probability}"
+    
+            if (risk.containsKey("top_risk_factors") && risk.top_risk_factors) {
+    
+                echo "Risk factors identified by AIOps:"
+    
+                risk.top_risk_factors.each { factor ->
+                    echo "- ${factor}"
+                }
+    
+            }
+    
+            // ==============================
+            // Deployment Decision Engine
+            // ==============================
+    
+            if (probability < 0.3) {
+    
+                echo "LOW RISK → deploy automático"
+    
+            } 
+            else if (probability < 0.6) {
+    
+                echo "MEDIUM RISK → aprovação manual"
+    
+                input message: "Aprovar deploy?"
+    
+            } 
+            else {
+    
+                error "HIGH RISK → deploy bloqueado"
+    
+            }
+    
+        }
+    
+    }
+}

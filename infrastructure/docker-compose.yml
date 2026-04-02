@@ -39,8 +39,11 @@ services:
   ai-agent:
     build: ../ai-governance-agent
     container_name: aiops-agent
+    restart: always
     ports:
       - "8000:8000"
+    volumes:
+    - ../ai-governance-agent/ai-data:/app/storage
 
 volumes:
 

@@ -1,9 +1,9 @@
 node {
-
+    
     // ==============================
     // Stage 1 - SCM
     // ==============================
-
+    
     stage("SCM") {
 
         echo "Checkout do repositório"
@@ -242,25 +242,10 @@ node {
         -H "Content-Type: application/json" \
         -d @evidence.json
         """
-
     }
 
     // ==============================
-    // Stage 10 - AIOps Model Training
-    // ==============================
-
-    stage("AIOps Model Training") {
-
-        echo "Treinando modelo AIOps (se dataset suficiente)"
-
-        sh """
-        curl -s -X POST http://ai-agent:8000/train
-        """
-
-    }
-
-    // ==============================
-    // Stage 11 - AIOps Risk Prediction
+    // Stage 10 - AIOps Risk Prediction
     // ==============================
 
     stage("AIOps Risk Prediction") {
@@ -278,7 +263,7 @@ node {
     }
 
     // ==============================
-    // Stage 12 - AIOps Deployment Decision
+    // Stage 11 - AIOps Deployment Decision
     // ==============================
     
     stage("AIOps Deployment Decision") {
@@ -303,7 +288,7 @@ node {
                 return
             }
     
-            // Verifica se existe probabilidade válida
+            // verifica se veio probabilidade
             if (!risk.containsKey("risk_probability") || risk.risk_probability == null) {
     
                 echo "Modelo ainda não treinado ou previsão indisponível"
@@ -326,39 +311,39 @@ node {
                 return
             }
     
-            // ==============================
-            // Exibição de informações de risco
-            // ==============================
-    
-            echo "Risk Level: ${risk.risk_level}"
             echo "Predicted risk: ${probability}"
     
-            if (risk.containsKey("top_risk_factors") && risk.top_risk_factors) {
+            def riskLevel
     
-                echo "Risk factors identified by AIOps:"
+            // thresholds ajustados para laboratório
+            if (probability < 0.40) {
     
-                risk.top_risk_factors.each { factor ->
-                    echo "- ${factor}"
-                }
+                riskLevel = "LOW"
+    
+            } else if (probability < 0.70) {
+    
+                riskLevel = "MEDIUM"
+    
+            } else {
+    
+                riskLevel = "HIGH"
     
             }
     
-            // ==============================
-            // Deployment Decision Engine
-            // ==============================
+            echo "Risk Level: ${riskLevel}"
     
-            if (probability < 0.3) {
+            if (riskLevel == "LOW") {
     
                 echo "LOW RISK → deploy automático"
     
-            } 
-            else if (probability < 0.6) {
+            }
+            else if (riskLevel == "MEDIUM") {
     
                 echo "MEDIUM RISK → aprovação manual"
     
                 input message: "Aprovar deploy?"
     
-            } 
+            }
             else {
     
                 error "HIGH RISK → deploy bloqueado"
@@ -367,5 +352,139 @@ node {
     
         }
     
+    }
+    
+    // ==============================
+    // Stage 12 - Deploy
+    // ==============================
+    
+    stage("Deploy Application") {
+    
+        echo "Realizando deploy da aplicação"
+    
+        sh """
+        chmod +x deploy.sh
+        ./deploy.sh
+        """
+    
+    }
+
+    // ==============================
+    // Stage 13 - Health Check (Infra)
+    // ==============================
+    
+    stage("Health Check") {
+    
+        script {
+    
+            echo "Verificando se o serviço subiu"
+    
+            def status = sh(
+                script: """
+                for i in {1..10}; do
+                    STATUS=\$(curl -s -o /dev/null -w "%{http_code}" http://springboot-demo:8086/health || echo 000)
+    
+                    if [ "\$STATUS" = "200" ]; then
+                        echo 200
+                        exit 0
+                    fi
+    
+                    sleep 3
+                done
+    
+                echo 500
+                """,
+                returnStdout: true
+            ).trim()
+    
+            echo "Health status: ${status}"
+    
+            if (status != "200") {
+    
+                env.DEPLOY_INCIDENT = "1"
+                error "Aplicação não iniciou corretamente"
+    
+            }
+    
+        }
+    
+    }
+    
+    // ==============================
+    // Stage 14 - Post Deploy Validation (Funcional)
+    // ==============================
+    
+    stage("Post Deploy Validation") {
+    
+        script {
+    
+            echo "Executando teste funcional"
+    
+            def status = sh(
+                script: """
+                curl -s -o /dev/null -w "%{http_code}" \
+                http://springboot-demo:8086/products || echo 500
+                """,
+                returnStdout: true
+            ).trim()
+    
+            echo "Functional status: ${status}"
+    
+            if (status == "200") {
+    
+                env.DEPLOY_INCIDENT = "0"
+                echo "Validação funcional OK"
+    
+            } else {
+    
+                env.DEPLOY_INCIDENT = "1"
+                echo "Falha funcional detectada"
+    
+            }
+    
+        }
+    
+    }
+    
+    // ==============================
+    // Stage 15 - Incident Feedback
+    // ============================== 
+    
+    stage("Incident Feedback") {
+    
+        script {
+    
+            echo "Enviando feedback de incidente ao AIOps Agent"
+    
+            sh """
+            curl -s -X POST http://ai-agent:8000/incident-feedback \
+            -H "Content-Type: application/json" \
+            -d '{
+                "change_metrics": {
+                    "files_changed": ${env.FILES_CHANGED},
+                    "lines_added": ${env.LINES_ADDED},
+                    "lines_removed": ${env.LINES_REMOVED},
+                    "modules_affected": ${env.MODULES_AFFECTED}
+                },
+                "incident": ${env.DEPLOY_INCIDENT}
+            }'
+            """
+    
+        }
+    
+    }
+    
+    // ==============================
+    // Stage 16 - AIOps Model Training
+    // ==============================
+
+    stage("AIOps Model Training") {
+
+        echo "Treinando modelo AIOps (se dataset suficiente)"
+
+        sh """
+        curl -s -X POST http://ai-agent:8000/train
+        """
+
     }
 }

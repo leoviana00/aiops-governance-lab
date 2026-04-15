@@ -34,4 +34,39 @@ RUN apt-get update && \
     apt-get install -y docker-ce-cli && \
     apt-get clean
 
+ 
+
 # Jenkins roda como root para acessar docker.sock
+
+
+
+# =========================
+# SSH AUTOMÁTICO
+# =========================
+
+RUN mkdir -p /root/.ssh
+
+# copiar chave
+COPY ssh/id_ed25519 /root/.ssh/id_ed25519
+COPY ssh/id_ed25519.pub /root/.ssh/id_ed25519.pub
+
+# permissões
+RUN chmod 700 /root/.ssh && \
+    chmod 600 /root/.ssh/id_ed25519 && \
+    chmod 644 /root/.ssh/id_ed25519.pub
+
+# adicionar gitlab aos hosts conhecidos
+#RUN ssh-keyscan gitlab >> /root/.ssh/known_hosts
+
+# garantir permissões
+#RUN chmod 644 /root/.ssh/known_hosts
+
+# garantir que git use essa chave
+RUN echo "Host gitlab\n\
+  HostName gitlab\n\
+  User git\n\
+  IdentityFile /root/.ssh/id_ed25519\n\
+  StrictHostKeyChecking no\n" >> /root/.ssh/config
+
+RUN chmod 600 /root/.ssh/config
+

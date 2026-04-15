@@ -12,24 +12,24 @@ Objetivo: criar o ambiente de experimentação local.
 
 ## Atividades
 
-- [ ] Criar repositório no GitHub
-- [ ] Definir estrutura inicial do projeto
-- [ ] Criar README inicial
-- [ ] Criar diretórios principais (`architecture`, `docs`, `infrastructure`, `pipelines`)
-- [ ] Criar arquivo `docker-compose.yml`
-- [ ] Subir ambiente local com Docker
+- [x] Criar repositório no GitHub
+- [x] Definir estrutura inicial do projeto
+- [x] Criar README inicial
+- [x] Criar diretórios principais (`architecture`, `docs`, `infrastructure`, `pipelines`)
+- [x] Criar arquivo `docker-compose.yml`
+- [x] Subir ambiente local com Docker
 
 ## Serviços do laboratório
 
-- [ ] GitLab
-- [ ] Jenkins
-- [ ] SonarQube
+- [x] GitLab
+- [x] Jenkins
+- [x] SonarQube
 
 ## Entregáveis
 
-- [ ] Ambiente DevOps funcional rodando localmente
-- [ ] Estrutura organizada do repositório
-- [ ] Primeiro commit do projeto
+- [x] Ambiente DevOps funcional rodando localmente
+- [x] Estrutura organizada do repositório
+- [x] Primeiro commit do projeto
 
 ---
 
@@ -39,22 +39,22 @@ Objetivo: criar um sistema que gere mudanças simuladas para os pipelines.
 
 ## Atividades
 
-- [ ] Criar projeto demo com Spring Boot
-- [ ] Criar estrutura básica da API
-- [ ] Implementar endpoints simples
-- [ ] Criar Dockerfile da aplicação
+- [x] Criar projeto demo com Spring Boot
+- [x] Criar estrutura básica da API
+- [x] Implementar endpoints simples
+- [x] Criar Dockerfile da aplicação
 
 ## Endpoints sugeridos
 
-- [ ] `GET /products`
-- [ ] `POST /products`
-- [ ] `GET /health`
+- [x] `GET /products`
+- [x] `POST /products`
+- [x] `GET /health`
 
 ## Entregáveis
 
-- [ ] Aplicação demo funcional
-- [ ] Repositório criado no GitLab
-- [ ] Aplicação pronta para build no pipeline
+- [x] Aplicação demo funcional
+- [x] Repositório criado no GitLab
+- [x] Aplicação pronta para build no pipeline
 
 ---
 
@@ -64,26 +64,26 @@ Objetivo: construir pipeline CI/CD para a aplicação demo.
 
 ## Atividades
 
-- [ ] Criar Jenkinsfile
-- [ ] Configurar integração Jenkins ↔ GitLab
-- [ ] Configurar build da aplicação
-- [ ] Configurar execução de testes
-- [ ] Configurar análise de qualidade com SonarQube
+- [x] Criar Jenkinsfile
+- [x] Configurar integração Jenkins ↔ GitLab
+- [x] Configurar build da aplicação
+- [x] Configurar execução de testes
+- [x] Configurar análise de qualidade com SonarQube
 
 ## Estágios do pipeline
 
-- [ ] Checkout
-- [ ] Build
-- [ ] Test
-- [ ] Sonar Analysis
-- [ ] Package
-- [ ] Governance Check
+- [x] Checkout
+- [x] Build
+- [x] Test
+- [x] Sonar Analysis
+- [x] Package
+- [x] Governance Check
 
 ## Entregáveis
 
-- [ ] Pipeline CI/CD funcional
-- [ ] Integração completa com GitLab
-- [ ] Integração com SonarQube
+- [x] Pipeline CI/CD funcional
+- [x] Integração completa com GitLab
+- [x] Integração com SonarQube
 
 ---
 
@@ -118,9 +118,9 @@ Objetivo: implementar o motor inteligente de governança.
 
 ## Atividades
 
-- [ ] Criar microserviço Python
-- [ ] Criar API REST para análise de mudanças
-- [ ] Estruturar agentes de análise
+- [x] Criar microserviço Python
+- [x] Criar API REST para análise de mudanças
+- [x] Estruturar agentes de análise
 
 ## Agentes iniciais
 

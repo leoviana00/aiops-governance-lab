@@ -1,0 +1,5 @@
+Host gitlab
+  HostName gitlab
+  User git
+  IdentityFile /var/jenkins_home/.ssh/id_ed25519
+  StrictHostKeyChecking no
